@@ -12,12 +12,11 @@ dotnet tool install --global ContextKit
 ck --help
 ```
 
-The repository root ships launchers for the same command under both names, so a
-clone needs no install:
+The repository root ships `ck`, `ck.cmd`, and `ck.ps1` launchers, so a clone
+needs no install:
 
 ```powershell
 ./ck.ps1 --help            # PowerShell
-./groundkit.ps1 --help     # PowerShell, long name
 ```
 
 ```bash
@@ -39,26 +38,7 @@ ck list
 
 ### Command name
 
-`ck` is the tool command and the primary name in this documentation. The
-repository root also ships `groundkit`, `groundkit.cmd`, and `groundkit.ps1`
-launchers that accept exactly the same arguments, so long-form invocations keep
-working during development:
-
-```bash
-ck query angular@19 "component lifecycle"
-groundkit query angular@19 "component lifecycle"
-```
-
-A .NET tool installs a single shim named by `ToolCommandName`, so the long name
-after a global install is a shell concern:
-
-```powershell
-Set-Alias groundkit ck
-```
-
-```bash
-alias groundkit=ck
-```
+`ck` is the tool command for both global installs and repository-local launchers.
 
 ## Root commands
 
