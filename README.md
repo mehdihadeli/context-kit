@@ -85,9 +85,8 @@ New releases use the `ContextKit` package identity. Existing installations of
 the former `GroundKit` package do not change automatically; install `ContextKit`
 and update shell commands and MCP client configurations to `ck`.
 
-Working from a clone instead? The repository root includes launchers for the
-same command under both names — `ck`, `ck.ps1`, and `ck.cmd`, plus the
-long-form `groundkit` variants — that run the source tree through `dotnet run`.
+Working from a clone instead? The repository root includes `ck`, `ck.ps1`, and
+`ck.cmd` launchers that run the source tree through `dotnet run`.
 Put the root on `PATH` for the session:
 
 ```bash
@@ -120,8 +119,35 @@ ck query "what are components in angular?"
 
 ## Connecting an MCP client
 
+For VS Code, run the standalone published MCP package with `dnx` without a
+global tool installation. Requires the .NET 10 SDK and ASP.NET Core runtime.
+Add this to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "contextkit": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": [
+        "ContextKit.Mcp",
+        "--version", "1.0.0-preview-0015",
+        "--yes",
+        "--source", "https://api.nuget.org/v3/index.json"
+      ]
+    }
+  }
+}
+```
+
+The version is pinned and `--yes` avoids an interactive download prompt.
+Only run trusted packages. See the [MCP setup guide](docs/guide/mcp.md)
+for prerequisites, package restrictions, and the published-package smoke test.
+For the portable format recommended by current VS Code versions, use a
+workspace-root `.mcp.json` and replace `servers` with `mcpServers`.
+
 Point the client at `ck mcp` over stdio. Most clients take the same
-server block; only the file location differs.
+server block; VS Code uses `servers` while many other clients use `mcpServers`.
 
 | Client | Config file |
 | --- | --- |
@@ -586,15 +612,15 @@ dotnet run --project src/ContextKit.Cli -- list
 `ContextKit.slnx` gathers the projects: `ContextKit.Abstractions` (shared records
 and interfaces), `ContextKit.Core` (source detection, ingestion, package builds,
 observability, OCI), `ContextKit.Storage.Sqlite` (persistence, FTS5, BM25),
-`ContextKit.Hosting` (DI composition and shared MCP startup), `ContextKit.Mcp`
-(reusable tools, deterministic formatting, transports), `ContextKit.Mcp.Host`
-(the `groundkit-mcp` tool), `ContextKit.Registry` (maintainer commands),
-`ContextKit.ServiceDefaults`, `ContextKit.Semantic.Onnx` (optional worker), and
+`ContextKit.Hosting` (DI composition, telemetry, health checks, resilience),
+`ContextKit.Mcp` (tools, deterministic formatting, transports, and the
+`groundkit-mcp` executable), `ContextKit.Registry` (maintainer commands),
+`ContextKit.Semantic.Onnx` (optional worker), and
 `ContextKit.Cli` (the `ck` tool). Tests live under `tests/` and cover Core, SQLite,
 CLI, MCP, and Registry behavior.
 
-The CLI and standalone MCP executable share Hosting services, not executable
-project references. SQLite depends on semantic interfaces; Hosting selects the
+The CLI reuses MCP startup from the `ContextKit.Mcp` assembly; both tools share
+Hosting services, which do not depend on MCP. SQLite depends on semantic interfaces; Hosting selects the
 provider. ONNX dependencies and model assets remain outside both tool packages.
 See [architecture](docs/guide/architecture.md) for the dependency graph.
 

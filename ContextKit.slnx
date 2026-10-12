@@ -3,11 +3,9 @@
     <Project Path="src/ContextKit.Abstractions/ContextKit.Abstractions.csproj" />
     <Project Path="src/ContextKit.Core/ContextKit.Core.csproj" />
     <Project Path="src/ContextKit.Hosting/ContextKit.Hosting.csproj" />
-    <Project Path="src/ContextKit.ServiceDefaults/ContextKit.ServiceDefaults.csproj" />
     <Project Path="src/ContextKit.Storage.Sqlite/ContextKit.Storage.Sqlite.csproj" />
     <Project Path="src/ContextKit.Cli/ContextKit.Cli.csproj" />
     <Project Path="src/ContextKit.Mcp/ContextKit.Mcp.csproj" />
-    <Project Path="src/ContextKit.Mcp.Host/ContextKit.Mcp.Host.csproj" />
     <Project Path="src/ContextKit.Registry/ContextKit.Registry.csproj" />
     <Project Path="src/ContextKit.Semantic.Onnx/ContextKit.Semantic.Onnx.csproj" />
   </Folder>

@@ -12,13 +12,11 @@ src/
 ├── ContextKit.Abstractions/       # Shared records, options, and service interfaces
 ├── ContextKit.Core/               # Ingestion, OCI, telemetry, semantic runtime
 ├── ContextKit.Storage.Sqlite/     # SQLite, lexical retrieval, vector sidecars
-├── ContextKit.Hosting/            # DI composition and shared MCP startup
+├── ContextKit.Hosting/            # DI composition, telemetry, health, resilience
 ├── ContextKit.Cli/                # User-facing command-line tool
-├── ContextKit.Mcp/                # Reusable MCP tools, formatting, transports
-├── ContextKit.Mcp.Host/           # Standalone groundkit-mcp executable
+├── ContextKit.Mcp/                # MCP tools, transports, and standalone executable
 ├── ContextKit.Registry/           # Registry maintenance and package tooling
-├── ContextKit.Semantic.Onnx/      # Optional, separately distributed worker
-└── ContextKit.ServiceDefaults/    # Host telemetry, health checks, and resilience
+└── ContextKit.Semantic.Onnx/      # Optional, separately distributed worker
 ```
 
 The dependency direction is:
@@ -31,9 +29,7 @@ flowchart LR
   hosting[ContextKit.Hosting]
   cli[ContextKit.Cli]
   mcp[ContextKit.Mcp]
-  mcphost[ContextKit.Mcp.Host]
   registry[ContextKit.Registry]
-  defaults[ContextKit.ServiceDefaults]
   worker[ContextKit.Semantic.Onnx]
 
   core --> abstractions
@@ -41,12 +37,11 @@ flowchart LR
   storage --> core
   hosting --> core
   hosting --> storage
-  hosting --> mcp
-  hosting --> defaults
   cli --> hosting
+  cli --> mcp
   cli --> registry
   mcp --> core
-  mcphost --> hosting
+  mcp --> hosting
   registry --> hosting
   core -. process protocol .-> worker
 ```
@@ -56,10 +51,23 @@ entities remain internal to `ContextKit.Storage.Sqlite`; they are not a public
 schema package. MCP payloads remain MCP adapter contracts rather than leaking
 into the core domain.
 
-`ContextKit.Mcp` is a library, not an executable. The CLI and standalone
-`ContextKit.Mcp.Host` each own their command-line adapters and call shared startup
-in `ContextKit.Hosting`. Releases publish the `ContextKit` and `ContextKit.Mcp`
-tool packages; the adapter's `ContextKit.Mcp.Adapter` identity is not published.
+`ContextKit.Mcp` owns the MCP tools, transport startup, and standalone executable.
+The CLI references its assembly to reuse MCP startup; referencing the assembly
+does not run its entry point. Releases still publish the `ContextKit` and
+`ContextKit.Mcp` tool packages, with `ck` and `groundkit-mcp` commands.
+There is no separate host or adapter project.
+
+Hosting registers shared core and storage services but does not depend on MCP.
+Its HTTP service defaults live in the same project rather than a separate
+one-file assembly. This keeps the dependency graph acyclic without introducing
+an extra composition project.
+
+The remaining boundaries have specific purposes: Abstractions prevents storage
+from depending on concrete semantic providers; Core owns provider-independent
+ingestion and retrieval services; SQLite isolates persistence; Registry owns
+maintainer workflows; CLI and MCP are separately published tools; and the ONNX
+worker has a separate process and distribution lifecycle. New projects are
+only warranted by an independent consumer, dependency boundary, or lifecycle.
 
 Semantic records and the embedding/configuration interfaces live in
 `ContextKit.Abstractions`. Hosting registers the concrete `SemanticRuntime`;
@@ -134,10 +142,10 @@ sequenceDiagram
 
 `ContextKit.Hosting` provides shared dependency-injection composition through
 `AddGroundKitServices()`. That registration method does not configure logging
-or OpenTelemetry. `GroundKitMcpHosting` also provides shared stdio and HTTP
+or OpenTelemetry. `GroundKitMcpHosting` in `ContextKit.Mcp` provides shared stdio and HTTP
 startup, including the transport-specific logging and health configuration.
 
-`ContextKit.ServiceDefaults` is used for MCP HTTP startup, whether invoked through
+The service-default extensions in `ContextKit.Hosting` are used for MCP HTTP startup, whether invoked through
 `ck mcp --http` or `groundkit-mcp --http`. An HTTP host has a service lifecycle, so it benefits from the
 default health checks, HTTP resilience, service discovery, and OpenTelemetry
 configuration provided by `AddServiceDefaults()`. The stdio MCP host and the CLI
