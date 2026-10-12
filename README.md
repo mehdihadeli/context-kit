@@ -119,9 +119,22 @@ ck query "what are components in angular?"
 
 ## Connecting an MCP client
 
+Use `dnx` for a local process, or [Docker](#running-in-docker) for a container
+without installing .NET on the host. Both support stdio; Docker also exposes
+Streamable HTTP for clients that share one server.
+
+### Using dnx
+
 For VS Code, run the standalone published MCP package with `dnx` without a
-global tool installation. Requires the .NET 10 SDK and ASP.NET Core runtime.
-Add this to `.vscode/mcp.json`:
+global tool installation. Requires the .NET 10 SDK and ASP.NET Core runtime
+(included in the standard SDK installation). `dnx` downloads and caches the
+NuGet tool, then starts its default stdio transport. No `mcp` subcommand is needed:
+
+```bash
+dnx ContextKit.Mcp --version 1.0.0-preview-0015 --yes --source https://api.nuget.org/v3/index.json
+```
+
+For VS Code, add this to `.vscode/mcp.json`:
 
 ```json
 {
@@ -140,11 +153,26 @@ Add this to `.vscode/mcp.json`:
 }
 ```
 
-The version is pinned and `--yes` avoids an interactive download prompt.
+The version is pinned and `--yes` avoids an interactive download prompt. The
+first start requires NuGet access; the process then waits for MCP messages on
+stdin. If the editor cannot find `dnx`, use `"command": "dotnet"` and prepend
+`"dnx"` to `args`.
 Only run trusted packages. See the [MCP setup guide](docs/guide/mcp.md)
 for prerequisites, package restrictions, and the published-package smoke test.
 For the portable format recommended by current VS Code versions, use a
 workspace-root `.mcp.json` and replace `servers` with `mcpServers`.
+
+To limit exposed packages, append `"--", "--libs", "react,vite"` to `args`:
+
+```bash
+dnx ContextKit.Mcp --version 1.0.0-preview-0015 --yes -- --libs react,vite
+```
+
+Set `GROUNDKIT_HOME` in the server's `env` object to an absolute store directory
+when sharing packages with the CLI. Otherwise the default store is relative to
+the server's working directory.
+
+### Using an installed CLI
 
 Point the client at `ck mcp` over stdio. Most clients take the same
 server block; VS Code uses `servers` while many other clients use `mcpServers`.
@@ -162,7 +190,7 @@ server block; VS Code uses `servers` while many other clients use `mcpServers`.
 ```json
 {
   "mcpServers": {
-    "groundkit": {
+    "contextkit": {
       "command": "ck",
       "args": ["mcp"]
     }
@@ -551,15 +579,87 @@ catalog's checksum verification.
 
 ## Running in Docker
 
+Requires Docker with Compose and a clone of this repository; no host .NET
+installation is needed. Run these commands from the repository root.
+
+### Streamable HTTP
+
 ```bash
-docker compose up --build mcp         # http://localhost:8081/mcp
-docker compose run --rm -i mcp-stdio  # stdio, no published port
+docker compose up --build --detach mcp
 ```
+
+For VS Code, configure `.vscode/mcp.json` with the published endpoint:
+
+```json
+{
+  "servers": {
+    "contextkit": {
+      "type": "http",
+      "url": "http://localhost:8081/mcp"
+    }
+  }
+}
+```
+
+The endpoint has no authentication. Do not expose it to untrusted networks.
+Stop the server with `docker compose down`; its package volume is retained.
+
+### Stdio
+
+Build the image before starting it from an MCP client:
+
+```bash
+docker compose build mcp-stdio
+```
+
+Use this VS Code configuration when the repository is the open workspace:
+
+```json
+{
+  "servers": {
+    "contextkit": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "compose",
+        "--file", "${workspaceFolder}/docker-compose.yml",
+        "run", "--rm", "--no-deps", "--no-tty", "--interactive",
+        "mcp-stdio"
+      ]
+    }
+  }
+}
+```
+
+For a different workspace, replace the Compose file argument with the absolute
+path to this clone's `docker-compose.yml`. `--interactive` keeps stdin open;
+`--no-tty` prevents terminal formatting from corrupting MCP messages. Do not use
+detached mode for stdio. The equivalent terminal command is:
+
+```bash
+docker compose run --rm --no-deps --no-tty --interactive mcp-stdio
+```
+
+For portable `.mcp.json` or clients using `mcpServers`, replace the top-level
+`servers` key with `mcpServers`. Choose one transport configuration per server.
+
+### Package storage
 
 Both services set `GROUNDKIT_HOME=/data` and share the `mcp-data` volume. The
 image runs the HTTP transport by default; `mcp-stdio` exists for clients that
-launch containers as subprocesses. Either way, packages must already be in the
-mounted store — the server does not download during queries.
+launch containers as subprocesses. The volume is separate from the host's
+`.groundkit` store. To copy existing host packages into it while `mcp` is running:
+
+```bash
+docker compose exec mcp mkdir -p /data/packages
+docker compose cp ./.groundkit/packages/. mcp:/data/packages/
+```
+
+`query-docs` and `get_docs` require installed packages. Use `download_package`
+to install a published package through MCP; `ask-docs` and `search-docs` can also
+download published packages when resolving a question. Those operations need
+registry access. Removing containers does not remove packages; `docker compose
+down --volumes` deletes the shared store.
 
 ## Registry maintainer commands
 
