@@ -5,9 +5,81 @@ ContextKit supports both standard MCP transports:
 - `stdio` is the default and is best for one agent process per session.
 - Streamable HTTP is available at `/mcp` for multiple clients or a container.
 
-The installed CLI tool is `ck`, and the repository launchers respond to both
-`ck` and `groundkit`. The server also ships as its own tool shim,
+The installed CLI tool and repository launchers use `ck`.
+The server also ships as its own tool shim,
 `groundkit-mcp`, which accepts the same options.
+
+## Run the published package with dnx
+
+`ContextKit.Mcp` is a NuGet tool package. Like `npx`, `dnx` downloads and
+caches the tool, then runs it without a global installation. Install the
+.NET 10 SDK (which provides `dnx`) and the .NET 10 ASP.NET Core runtime;
+the standard SDK installation includes both. Ensure `dnx` is on `PATH` for
+your editor. The package defaults to stdio, so no `mcp` subcommand is needed.
+
+Run the pinned preview:
+
+```bash
+dnx ContextKit.Mcp --version 1.0.0-preview-0015 --yes --source https://api.nuget.org/v3/index.json
+```
+
+The process waits for MCP messages on stdin. Its stdout is reserved for MCP
+JSON-RPC; do not wrap it in a command that prints startup banners.
+`--yes` suppresses download confirmation, which an MCP client cannot answer.
+Use it only for trusted packages and sources. Pin the version so updates are
+deliberate. The first run requires NuGet access and may take longer to start.
+
+### VS Code and GitHub Copilot
+
+Add this to `.vscode/mcp.json` in the workspace:
+
+```json
+{
+  "servers": {
+    "contextkit": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": [
+        "ContextKit.Mcp",
+        "--version", "1.0.0-preview-0015",
+        "--yes",
+        "--source", "https://api.nuget.org/v3/index.json"
+      ]
+    }
+  }
+}
+```
+
+For a portable configuration shared with Copilot CLI, use `.mcp.json` at the
+workspace root and replace the top-level `servers` key with `mcpServers`.
+Current VS Code documentation recommends this portable format for new servers;
+the `.vscode/mcp.json` example above remains supported for existing setups.
+
+Start the server from VS Code's MCP configuration. Review its configuration
+before trusting the workspace, and approve a server trust prompt if shown.
+Use `MCP: List Servers` to inspect status and logs. If `dnx` is not found,
+restart VS Code after installing the SDK, or use `"command": "dotnet"` and
+prepend `"dnx"` to `args`; `dotnet dnx` runs the same tool executor.
+
+For clients that use `mcpServers` rather than VS Code's `servers`, put the
+same command and arguments under that client's `mcpServers` object.
+To restrict packages, append `"--", "--libs", "react,vite"` to `args`.
+The separator forwards options to the server rather than to `dnx`.
+The published package still uses `GROUNDKIT_HOME` for a custom package store;
+set it in the server's `env` object when sharing a store with the CLI.
+
+### Test the published package
+
+The explicit integration test launches the pinned NuGet package via
+`dotnet dnx` from an isolated temporary directory, not the source project.
+It checks initialization and tool discovery, and fails on non-JSON stdout.
+It requires NuGet access, so normal test runs do not execute it:
+
+```bash
+dotnet test --project tests/ContextKit.Mcp.Tests/ContextKit.Mcp.Tests.csproj --filter-method '*Should_Initialize_And_List_Tools_From_Published_Package_Via_Dnx' --explicit on
+```
+
+## Run the installed CLI or Docker image
 
 Start the local server:
 

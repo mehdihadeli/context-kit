@@ -112,7 +112,7 @@ jobs:
 
       - name: Pack MCP host
         run: >-
-          dotnet pack src/ContextKit.Mcp.Host/ContextKit.Mcp.Host.csproj --configuration Release --output artifacts
+          dotnet pack src/ContextKit.Mcp/ContextKit.Mcp.csproj --configuration Release --output artifacts
           -p:PublicRelease=true -p:PackageVersion=${{ needs['calculate-version'].outputs.version }}
           -p:GroundKitProviderVersion=${{ needs['calculate-version'].outputs.version }}
           -p:GroundKitProviderReleaseTag=${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', needs['calculate-version'].outputs.version) }}

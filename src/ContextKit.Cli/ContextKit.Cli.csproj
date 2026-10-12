@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ContextKit.Hosting\ContextKit.Hosting.csproj" />
+    <ProjectReference Include="..\ContextKit.Mcp\ContextKit.Mcp.csproj" />
     <ProjectReference Include="..\ContextKit.Registry\ContextKit.Registry.csproj" />
   </ItemGroup>
 
