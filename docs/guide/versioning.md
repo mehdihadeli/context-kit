@@ -56,6 +56,13 @@ monotonically increasing GitHub Actions workflow run number. The date and run
 number make separately built preview or RC artifacts distinguishable; they do
 not replace the NBGV preview or RC ordinal.
 
+CI passes the calculated artifact version as `ReleasePackageVersion` when
+packing the CLI and MCP packages. `Directory.Build.targets` applies it to
+`PackageVersion` and `NuGetPackageVersion` after NBGV's `GetBuildVersion` target,
+so NuGet receives versions such as `1.0.0-preview.1.26284.18` rather than NBGV's
+default padded preview version. Local builds without `ReleasePackageVersion`
+continue to use NBGV's calculated version.
+
 ContextKit currently publishes the `ContextKit` CLI package to NuGet.org and
 three self-contained archives (`linux-x64`, `osx-x64`, and `osx-arm64`). The
 workflow does not currently publish a Docker image or deploy to an environment;
