@@ -1,20 +1,22 @@
 # ContextKit
 
-**Documentation packages your AI agent can hold locally — no hosted docs API on the hot path.**
+[![build-test-publish](https://img.shields.io/github/actions/workflow/status/mehdihadeli/ContextKit/build-and-publish.yml?branch=main&style=for-the-badge&label=build-test-publish)](https://github.com/mehdihadeli/ContextKit/actions/workflows/build-and-publish.yml)
+[![.NET 10](https://img.shields.io/badge/.NET%2010-512bd4?style=for-the-badge)](https://dotnet.microsoft.com/platform/dotnet)
 
-[![NuGet](https://img.shields.io/nuget/v/ContextKit.svg)](https://www.nuget.org/packages/ContextKit) [![Build](https://github.com/mehdihadeli/groundkit/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/mehdihadeli/groundkit/actions/workflows/build-and-publish.yml)
+[![ContextKit](https://img.shields.io/nuget/v/ContextKit?style=for-the-badge&color=blue&label=ContextKit)](https://www.nuget.org/packages/ContextKit)
+[![ContextKit.Mcp](https://img.shields.io/nuget/v/ContextKit.Mcp?style=for-the-badge&color=blue&label=ContextKit.Mcp)](https://www.nuget.org/packages/ContextKit.Mcp)
 
-ContextKit is a .NET CLI and MCP server. It turns documentation into a portable
-package, keeps that package in a local store, and answers agent queries from
-SQLite full-text search. You build a package once for a specific source
-snapshot; after that, queries cost nothing but disk reads.
+ContextKit is local-first documentation packaging and retrieval for AI agents.
+Build a documentation source into a portable SQLite package once, then query it
+locally through the CLI or an MCP server. No repeated fetches, parsing, or token
+costs for the same source.
 
 It exists because the usual arrangement — agent fetches a docs website, parses
 HTML, chunks it on the fly — is slow, breaks when the site changes, and keeps
 paying network and token costs for the same pages. ContextKit moves that work to
 build time and keeps retrieval local.
 
-| | |
+| At a glance | Details |
 | --- | --- |
 | Runtime | .NET 10 |
 | Transport | MCP over stdio (default) and Streamable HTTP |
